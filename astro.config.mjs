@@ -102,6 +102,7 @@ const sanitizeSchema = {
 export default defineConfig({
   // Required for RSS generation. Prefer SITE_URL; fallback keeps build passing.
   site: site.url,
+  base: '/whoami/',
   integrations: hasSiteUrl ? [sitemap()] : [],
   trailingSlash: 'always',
   build: {

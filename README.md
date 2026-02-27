@@ -1,56 +1,42 @@
 # WayneVoyager's Blog
 
-Where I throw coins and record both sides.
+每次抛出硬币，记录在此。
 
-A personal blog built with [Astro](https://astro.build) and the [astro-whono](https://github.com/cxro/astro-whono) theme, deployed on [GitHub Pages](https://pages.github.com).
+基于 [Astro](https://astro.build) 框架和 [astro-whono](https://github.com/cxro/astro-whono) 开源主题搭建的个人博客，部署在 [GitHub Pages](https://pages.github.com) 上。
 
-## About
+## 关于
 
-I'm WayneVoyager. I write about product, AI, and things in life worth noting down. Every attempt gets recorded here, heads or tails.
+我是 WayneVoyager，关注产品、AI 和生活中值得记下的事。每一次尝试都留下记录，不管正反。
 
-## Project Structure
+## 项目结构
 
 ```text
-├── public/               # Static assets (images, fonts, favicon)
-│   ├── author/           # Author avatar
-│   ├── bits/             # Bits (short notes) images
-│   ├── fonts/            # Web fonts (subset WOFF2)
-│   └── images/           # Post images
+├── public/               # 静态资源（图片、字体、favicon）
 ├── src/
-│   ├── components/       # Reusable UI components
-│   ├── content/          # Content collections
-│   │   ├── essay/        # Long-form posts (航行日志)
-│   │   ├── bits/         # Short notes (瓶中信)
-│   │   └── memo/         # Memories (锚地)
-│   ├── layouts/          # Page layouts
-│   ├── pages/            # Routes and pages
-│   ├── scripts/          # Client-side scripts
-│   └── styles/           # Global styles and CSS
-├── astro.config.mjs      # Astro configuration
-├── site.config.mjs       # Site metadata and settings
-└── package.json          # Dependencies and scripts
+│   ├── components/       # UI 组件
+│   ├── content/          # 内容集合
+│   │   ├── essay/        # 航行日志（长文）
+│   │   ├── bits/         # 瓶中信（短想法）
+│   │   └── memo/         # 锚地（回忆）
+│   ├── layouts/          # 页面布局
+│   ├── pages/            # 路由与页面
+│   ├── scripts/          # 客户端脚本
+│   └── styles/           # 样式
+├── astro.config.mjs      # Astro 配置
+├── site.config.mjs       # 站点元信息
+└── package.json          # 依赖管理
 ```
 
-## Commands
+## 部署
 
-| Command           | Action                                     |
-| :---------------- | :----------------------------------------- |
-| `npm install`     | Install dependencies                       |
-| `npm run dev`     | Start local dev server at `localhost:4321`  |
-| `npm run build`   | Build the production site to `./dist/`     |
-| `npm run preview` | Preview the build locally before deploying |
+通过 [GitHub Actions](.github/workflows/deploy.yml) 自动部署，每次 push 到 `main` 分支即触发。
 
-## Deployment
+访问地址：https://waynevoyager.github.io/whoami/
 
-This site auto-deploys to GitHub Pages via [GitHub Actions](.github/workflows/deploy.yml) on every push to `main`.
+## 主题声明
 
-Live at: https://waynevoyager.github.io/whoami/
+本博客使用 [astro-whono](https://github.com/cxro/astro-whono) 主题（MIT 协议）
 
-## Special Thanks
-
-- [cxro/astro-whono](https://github.com/cxro/astro-whono) — the Astro theme this blog is built on
-- [elizen/elizen-blog](https://github.com/elizen/elizen-blog) — design inspiration for the theme
-
-## License
+## 许可证
 
 MIT

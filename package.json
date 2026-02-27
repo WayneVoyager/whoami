@@ -1,16 +1,16 @@
 {
-  "name": "astro-whono",
+  "name": "whoami",
   "version": "0.1.1",
   "private": false,
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cxro/astro-whono.git"
+    "url": "https://github.com/WayneVoyager/whoami.git"
   },
   "bugs": {
-    "url": "https://github.com/cxro/astro-whono/issues"
+    "url": "https://github.com/WayneVoyager/whoami/issues"
   },
-  "homepage": "https://astro.whono.me",
+  "homepage": "https://waynevoyager.github.io/whoami/",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"

@@ -1,0 +1,72 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
+---
+
+<BaseLayout title="船长室" bodyClass="about-page">
+  <div class="page-header page-header--about">
+    <h1 class="page-title">船长室</h1>
+    <div class="page-actions">
+      <a
+        class="icon-link"
+        href="https://github.com/WayneVoyager"
+        aria-label="GitHub"
+        title="GitHub"
+      >
+        <Icon name="github" class="icon" />
+      </a>
+    </div>
+  </div>
+  <p class="about-intro-line">
+    WayneVoyager，一个写字的人。<br />
+    关注产品、AI 和生活中值得记下的事。<br />
+    这里是我探索的地方——<br />
+    每一次尝试都留下记录，不管正反。
+  </p>
+  <h2 class="section-title about-section-title">栏目指引</h2>
+  <div class="site-guide">
+    <article class="site-guide-item">
+      <div class="site-guide-head">
+        <h3 class="site-guide-title">航行日志</h3>
+        <span class="site-guide-link">/essay/</span>
+      </div>
+      <p class="site-guide-desc">长文章，认真写的那种。</p>
+    </article>
+    <article class="site-guide-item">
+      <div class="site-guide-head">
+        <h3 class="site-guide-title">瓶中信</h3>
+        <span class="site-guide-link">/bits/</span>
+      </div>
+      <p class="site-guide-desc">短想法，碎片，随手记。</p>
+    </article>
+    <article class="site-guide-item">
+      <div class="site-guide-head">
+        <h3 class="site-guide-title">锚地</h3>
+        <span class="site-guide-link">/memo/</span>
+      </div>
+      <p class="site-guide-desc">值得停靠的片刻与回忆。</p>
+    </article>
+    <article class="site-guide-item">
+      <div class="site-guide-head">
+        <h3 class="site-guide-title">来时路</h3>
+        <span class="site-guide-link">/archive/</span>
+      </div>
+      <p class="site-guide-desc">所有文章，按时间回溯。</p>
+    </article>
+  </div>
+
+  <h2 class="section-title about-section-title">联系</h2>
+  <section class="contact-block" aria-label="联系方式">
+    <p class="contact-note">如果你有问题、建议，可以通过以下方式联系</p>
+    <ul class="contact-list">
+      <li>
+        <span class="contact-link-head">
+          <Icon name="github" class="contact-icon" />
+          <span>GitHub：</span>
+        </span>
+        <a href="https://github.com/WayneVoyager">WayneVoyager</a>
+      </li>
+    </ul>
+  </section>
+
+</BaseLayout>

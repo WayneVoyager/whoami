@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Whono航海图标">
+  <defs>
+    <linearGradient id="sea" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E6FBA"/>
+      <stop offset="100%" stop-color="#0E4A7A"/>
+    </linearGradient>
+  </defs>
+  <!-- 圆形背景 -->
+  <circle cx="32" cy="32" r="30" fill="url(#sea)"/>
+  <!-- 指南针外圈 -->
+  <circle cx="32" cy="32" r="22" fill="none" stroke="#E8D5A3" stroke-width="1.5"/>
+  <!-- 指南针刻度 -->
+  <line x1="32" y1="11" x2="32" y2="14" stroke="#E8D5A3" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="32" y1="50" x2="32" y2="53" stroke="#E8D5A3" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="11" y1="32" x2="14" y2="32" stroke="#E8D5A3" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="50" y1="32" x2="53" y2="32" stroke="#E8D5A3" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- 指南针针 - 北（上，红色三角） -->
+  <polygon points="32,14 28,32 36,32" fill="#D94F4F"/>
+  <!-- 指南针针 - 南（下，白色三角） -->
+  <polygon points="32,50 28,32 36,32" fill="#E8E8E8"/>
+  <!-- 指南针针 - 东 -->
+  <polygon points="50,32 32,28 32,36" fill="#C4B078" opacity="0.6"/>
+  <!-- 指南针针 - 西 -->
+  <polygon points="14,32 32,28 32,36" fill="#C4B078" opacity="0.6"/>
+  <!-- 中心点 -->
+  <circle cx="32" cy="32" r="2.5" fill="#E8D5A3"/>
+</svg>

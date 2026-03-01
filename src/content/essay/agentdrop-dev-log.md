@@ -8,41 +8,85 @@ tags: ["AgentDrop", "file-transfer", "claude-code", "skill", "python"]
 
 > GitHub 仓库：[WayneVoyager/AgentDrop](https://github.com/WayneVoyager/AgentDrop)
 
-日期：2026-02-28
-
-参与者： 用户 + AI(Claude Code 执行开发)
-
-产出： AgentDrop Skill。
+**日期**：2026-02-28
+**参与者**：用户（产品负责人）+ AI（Claude Code 执行开发）
+**产出**：AgentDrop Skill — 远程服务器文件传输工具
 
 ---
 
-## 一、项目背景
+## 一、想法的诞生
 
-在远程服务器上使用 Claude Code 时，PC 与服务器之间传输文件非常不便（通常只能用 rz/sz）。AgentDrop 通过启动一个临时 Web 服务器，让用户在 PC 浏览器中完成文件的上传和下载。
+### 触发 brainstorming
 
-## 二、用户初始 Prompt
+在 Claude Code 中输入 `/brainstorm`，触发了 superpowers:brainstorming skill。Claude 问："你想做什么类型的新项目？"
 
-用户提交了一份完整的实现方案文档，核心指令为：
+### 用户原始 Prompt（一字未改）
+
+> 我一般使用claude code将他部署在云上服务器，我自己在pc上通过shell工具和claude code交流。这种时候会面临一个问题。当我们需要互传文件的时候很不方便，只能使用rz或者sz命令。所以我想封装一个通用工具解决这个问题。起码需要具备一下功能
+> 1. 我认为以网页的形式交互是很好的。
+> 1.1 可以自动生成一次性随机链接，链接具备一定的安全性保证
+> 1.2 可以通过网页的易用性交互，直接上传和下载文件。
+> 2. 对话完成后需要主动回收该链接
+> 3. 允许共享目录或者单个文件。支持仅上传、仅下载、上传下载都支持。
+> 4. 你帮我判断下最终怎么封装他比较好，是skill还是plugins。主要的使用场景就是在claude code
+>
+> 调研下市场上，claude code商店或者github是否存在已有的项目
+
+这就是一切的起点。一个远程开发中真实遇到的痛点——rz/sz 不好用。
+
+### brainstorming 中的追问
+
+Claude 提出了三个技术方案（A/B/C），用户中途追问：
+
+> 封装成skills
+
+> 方案ABC的区别是什么
+
+> stdlib是啥意思。flask是啥意思。
+
+当时对 Python 的 stdlib（标准库）和 Flask 框架的区别并不清楚，Claude 解释后选择了 stdlib 方案——零依赖，远程服务器上不需要 pip install。
+
+---
+
+## 二、实现方案的演进
+
+### 第一版方案
+
+brainstorming 产出设计文档后，发出第一条 implement 指令：
 
 > Implement the following plan:
 >
-> AgentDrop — File Transfer Skill 实现方案
+> \# File Transfer Skill 设计方案
 >
-> 方案要点包括：
->
-> * 开发目录独立于 Skill 安装目录
->
-> * Skill 安装到 `.claude/skills/file-transfer/`
->
-> * 三个文件：`SKILL.md`、`file_transfer_server.py`（~500 行，纯标准库）、`index.html`（单文件前端）
->
-> * 路由设计、CLI 参数、安全机制（URL Token、4 位 PIN、危险目录拦截、优雅超时）均已在方案中定义
+> 方案：stdlib 双文件架构 — Python 后端（纯标准库，零依赖）+ 独立 HTML 前端文件。
+
+方案定义了目录结构、SKILL.md frontmatter、服务器模块划分（约 500 行）、前端设计、安全机制（URL Token + 可选密码 + Session Cookie + 路径遍历防护 + 速率限制 + 自动过期）、端口规则（32000+），以及 9 项验证计划。
+
+### 安全机制的即时调整
+
+第一版方案提交后，用户马上补了一条修改：
+
+> 回到上一步的设计文档中。
+> 1. 密码不要太复杂，4位纯数字就行 url中的链接地址可以复杂一点
+> 2. 严格控制用户可以下载的文件目录。一旦发现是风险目录需要提醒用户二次确认。不允许把根目录。root目录 home目录 暴露出去.
+
+这条 prompt 定义了两个关键设计决策：PIN 保持简单（4 位数字），安全由 URL Token 承担；危险目录直接拦截，不给用户 `--force` 覆盖的机会。
+
+### 第二版方案（正式开发版）
+
+在前一轮实现的基础上，整理了更完整的方案，在新会话中发出，补充了：
+- 多线程并发处理（ThreadingHTTPServer）
+- 优雅超时机制（活跃传输计数器 + 硬限制 10 分钟）
+- Multipart 解析器的流式处理设计
+- 前端并发上传队列（最多 3 个 XHR 并行）
+
+---
 
 ## 三、开发过程
 
-### Phase 1：核心实现
+### 核心实现
 
-**并行创建三个文件：**
+Claude 并行创建了三个文件：
 
 1. **file_transfer_server.py**（634 行）
    - 模块结构：`MultipartParser` → `FileTransferHandler` → `ThreadedHTTPServer` → `ServerManager` → CLI 入口
@@ -58,141 +102,114 @@ tags: ["AgentDrop", "file-transfer", "claude-code", "skill", "python"]
    - frontmatter: `name: file-transfer`
    - 触发词：传文件、发文件、上传、下载、共享文件
 
-### Phase 2：功能测试
+### 测试中的翻车
 
-**启动测试 — 第一次尝试：**
+第一次测试时 timeout 设了 10 秒，服务在 curl 测试跑完之前就自动关闭了。改成 120 秒后重新测试，所有路由（主页、文件列表、下载、ZIP 打包、上传、密码保护、速率限制、危险目录拦截、路径遍历防护）全部通过。
 
-```bash
-python3 scripts/file_transfer_server.py --path /tmp/agentdrop-test --port 32900 --timeout 10 &
-```
+### UI/UX 优化
 
-输出：
-```json
-{"status": "running", "url": "http://x.x.x.x:32900/{token}", "pid": 1150832, "mode": "both", "path": "/tmp/agentdrop-test", "timeout_seconds": 10}
-```
+用户第一次在浏览器中打开 AgentDrop 后，经过两轮反馈优化了以下内容：
 
-**问题**：超时设为 10 秒太短，在跑测试之前服务就已经自动关闭了。改为 120 秒重启。
+- 浏览器标签页 favicon — 使用内联 SVG（深色圆角方块 + 蓝色渐变下载箭头）
+- 文件列表字号偏小 — 逐步调大至合适尺寸
+- 根目录显示孤零零的 "Root" 面包屑没有意义 — 改为根目录时隐藏面包屑，进入子目录后才显示
+- 左上角标题加设计感 — 斜体 + "Drop" 使用蓝色渐变 + `background-clip: text`
 
-**第二次启动（timeout=120）后的 curl 测试结果：**
+有一个需要注意的点：改完 HTML 后页面没变化，原因是 `ServerManager.get_index_html()` 有 `_index_html_cache`，需要重启服务才能生效。
 
-```
-Main page: 200
-File list: {"path": "", "items": [{"name": "subdir", "is_dir": true, ...}, {"name": "hello.txt", "is_dir": false, ...}]}
-Download: test content
-Subdir list: {"path": "subdir", "items": [{"name": "nested.txt", "is_dir": false, ...}]}
-Invalid token: 403
-Path traversal: 404
-Zip download: 200
-```
-
-**上传测试：**
-```
-Upload response: {"ok": true, "files": ["hello.txt"]}
-```
-
-**危险目录拦截测试（全部通过）：**
-```
---path /     → {"status": "error", "message": "Refusing to share '/' — it contains system directory '/root'"}
---path /root → {"status": "error", "message": "Refusing to share dangerous directory: /root"}
---path /home → {"status": "error", "message": "Refusing to share dangerous directory: /home"}
---path /etc  → {"status": "error", "message": "Refusing to share dangerous directory: /etc"}
---path /var  → {"status": "error", "message": "Refusing to share dangerous directory: /var"}
-```
-
-**密码保护测试（password=1234）：**
-
-```
-No auth:         {"error": "Authentication required"}
-Wrong password:  {"ok": false, "error": "Wrong password"}
-Correct password: {"ok": true, "session": "..."}
-With session:    {"path": "", "items": [...]}（正常返回文件列表）
-```
-
-**速率限制测试（连续 6 次错误密码）：**
-```
-Attempt 1: {"ok": false, "error": "Wrong password"}
-Attempt 2: {"ok": false, "error": "Wrong password"}
-Attempt 3: {"ok": false, "error": "Wrong password"}
-Attempt 4: {"ok": false, "error": "Wrong password"}
-Attempt 5: {"ok": false, "error": "Wrong password"}
-Attempt 6: {"ok": false, "error": "Too many failed attempts. Please try later."}
-```
-
-第 6 次被锁定，符合预期。
-
-### Phase 3：Skill 安装
-
-文件复制到 `.claude/skills/file-transfer/` 后，Claude Code skill 列表中成功出现 `file-transfer`。
-
-### Phase 4：UI/UX 优化
-
-用户启动服务后实际体验，提出了以下优化需求：
-
-**第一轮：**
-1. 浏览器标签页 favicon — 使用内联 SVG（深色圆角方块 + 蓝色渐变下载箭头）
-2. 文件列表字号偏小 — 表头 12→13px，单元格 13→14px
-
-**问题**：改完 HTML 后用户反馈页面没变化。原因是 `ServerManager.get_index_html()` 有 `_index_html_cache`，需要重启服务才能生效。重启后正常。
-
-**第二轮：**
-1. 字号再调大 — 表头 13→14px，单元格 14→15px
-2. 根目录显示孤零零的 "Root" 面包屑没有意义 — 改为根目录时隐藏面包屑，进入子目录后才显示
-3. 左上角标题加设计感 — 放大到 28px，加粗 700，斜体，"Drop" 使用蓝色渐变 `linear-gradient(135deg, #4f9cf7, #6db3ff)` + `background-clip: text`
-4. 右上角 badge 放大 — 字号 12→14px
-
-**插曲**：用户上传了一个中文名的 .md 文件，以为文件名被单引号包裹。检查磁盘文件后确认是误判，文件名正常。
-
-### Phase 5：文本预览功能
+### 文本预览功能
 
 用户提出需求：对 .md .txt 等基础文本文件提供查看功能。
 
-**评估结论**：复杂度中低，不需要走 superpowers 流程。
+> 你调研一下，如果对于.md .txt基础的文本文件提供一个查看功能。你评估一下这个需求是否复杂，复杂的话我们走superpowers流程开发。
 
-**用户确认的交互设计**：
-- 点击文本文件 → 弹出预览弹窗（非直接下载）
-- 弹窗顶部：文件名 + Download 按钮 + 关闭按钮
-- .md 做 markdown 渲染，其他用等宽字体 `<pre>` 展示
-- 点击 Download 按钮 → 触发下载
-- 支持 Esc 键和点击遮罩关闭
+评估复杂度中低，不需要走 brainstorming + writing-plans 流程。
 
-**实现**：
+交互设计确认后实现了：
+- 后端新增 `GET /{token}/preview/{path}` 路由，30+ 种扩展名可预览，200KB 大小限制
+- 前端预览弹窗：文件名 + Download 按钮 + 关闭按钮
+- .md 文件有 Markdown 渲染，其他用等宽字体 `<pre>` 展示
 
-后端新增 `GET /{token}/preview/{path}` 路由，30+ 种扩展名可预览，200KB 大小限制。
+---
 
-前端新增 `renderMarkdown()` 和 `inlineMarkdown()` 实现简单 markdown 渲染（标题、列表、表格、代码块、链接、粗斜体、分隔线）。
+## 四、发布前整理
 
-**Preview API 测试：**
-```
-.md file:  {"name": "test.md", "content": "# Test Markdown\n\nHello **world**\n\n- item 1\n- item 2\n\n", "size": 53, "ext": ".md"}
-.txt file: {"name": "test.txt", "content": "plain text file\n", "size": 16, "ext": ".txt"}
-```
+### 收尾任务
 
-### Phase 6：发布前整理
+用户提出四项收尾任务：
 
-用户要求：
-1. 对话存档（本文档）
-2. 代码安全审计 + 修复
-3. README 重写（参考 GitHub 高星 skill 仓库）
-4. 中文版 README
+> 1. 整理交互对话内容做存档
+> 2. 为安装 skill 写说明加入 README，参考 GitHub 上高星独立 skill
+> 3. 代码安全审计
+> 4. 写中文版 README
 
-**安全审计发现的关键问题**：
-- Critical: Markdown 预览 XSS（`javascript:` URL），上传无大小限制
-- High: 速率限制无衰减，X-Forwarded-For 可伪造，Session Cookie 缺 HttpOnly
-- Medium: Upload 路径检查用 `startswith` 不安全，SHARED_PATH 模板注入
+Claude 尝试并行执行，用户两次纠正：
 
-## 四、关键设计决策
+> 这些任务是有依赖顺序的，第4个任务必须在第2个之后
+
+> 任务1根本就不要放在AgentDrop这个目录下，丢去ftp目录 内容要尽量真实 别并行了就按照1234的顺序做
+
+### 安全审计结果
+
+代码审计发现了 7 个安全问题并全部修复：
+
+| 级别 | 问题 | 修复 |
+|------|------|------|
+| Critical | Markdown 预览 XSS（`javascript:` URL 未过滤） | 添加 `isSafeUrl()` 过滤函数 |
+| Critical | 上传无大小限制 | 添加 `UPLOAD_MAX_SIZE = 500MB`，超限返回 413 |
+| High | 速率限制无衰减，永久锁定 | 10 分钟后自动重置 |
+| High | X-Forwarded-For 可伪造 | 移除，直接用 `client_address[0]` |
+| High | Session Cookie 缺 HttpOnly | 改由服务端 Set-Cookie 设置，含 HttpOnly 标志 |
+| Medium | Upload 路径用 `startswith` 检查 | 改用 `Path.relative_to()` |
+| Medium | SHARED_PATH 直接注入 HTML 模板 | `html.escape()` 转义 |
+
+额外修复了 Python 3.9 兼容性（`X | None` → `Optional[X]`）、从预览列表移除 `.env`、ZIP 按钮 dead code 等。
+
+---
+
+## 五、关键设计决策
 
 | 决策 | 理由 |
 |------|------|
 | 纯 Python 标准库 | 远程服务器上可能无法 pip install，零依赖保证可用性 |
-| 4 位数字 PIN | 够用且易输入（手机/PC），URL token 已提供主要安全性 |
+| 封装为 Skill 而非 Plugin | 使用场景是 Claude Code，Skill 是最自然的集成方式 |
+| 4 位数字 PIN | 够用且易输入，URL token 已提供主要安全性 |
 | 危险目录全部直接拒绝 | 无 `--force` 覆盖，避免误操作暴露系统文件 |
 | ThreadingHTTPServer | 原生支持并发请求，无需引入 asyncio |
 | 单文件前端 | 无构建步骤，服务端直接读取模板注入变量 |
-| 内联 SVG favicon | 无需额外文件，通过 data URI 嵌入 |
-| 面包屑根目录隐藏 | 根目录时显示无意义，减少视觉噪音 |
 
-## 五、最终文件结构
+---
+
+## 六、协作模式复盘
+
+### 什么做得好
+
+1. **brainstorming 阶段的充分沟通**：AI 没有拿到需求就直接动手，而是通过 brainstorming 提出多个方案让用户选择，用户不懂的地方（stdlib vs flask）也得到了解释
+2. **方案迭代再开发**：经历了两版方案才正式开发，第二版补充了并发、超时、流式解析等关键设计，避免了开发中途大改
+3. **安全设计前置**：密码策略和危险目录拦截在方案阶段就确定了，不是事后补丁
+4. **复杂度评估**：文本预览功能评估为中低复杂度，跳过了 superpowers 流程，判断准确
+5. **安全审计有实际产出**：7 个真实安全问题被发现并修复，包括 2 个 Critical 级别
+
+### 什么可以改进
+
+1. **AI 对任务依赖关系判断不够**：收尾的四项任务有明确的串行依赖，但 AI 两次尝试并行执行，用户不得不两次纠正。AI 应该主动分析任务间的依赖关系
+2. **timeout 参数的默认值设置不当**：第一次测试用了 10 秒超时导致服务提前关闭，这种参数应该在测试时给一个宽松的默认值
+3. **HTML 缓存机制没有提前告知**：用户改完 HTML 后刷新浏览器没看到变化，原因是服务端缓存。AI 应该在修改 HTML 后主动提示需要重启服务
+4. **UI 优化需要多轮调整**：字号、面包屑等问题需要实际看到页面才能判断，这是 CLI 开发 Web UI 的固有局限，未来可以考虑让 AI 先给出截图预览
+
+### 沟通效率数据
+
+| 阶段 | 用户消息数 | 返工次数 |
+|------|-----------|---------|
+| brainstorming + 方案设计 | ~6 | 0 |
+| 核心开发 + 测试 | 1 | 1（timeout 参数） |
+| UI/UX 优化 | ~5 | 0（但需多轮微调） |
+| 文本预览功能 | 3 | 0 |
+| 发布前整理 | 4 | 2（任务顺序被纠正两次） |
+
+---
+
+## 附录：最终文件结构
 
 ```
 AgentDrop/
@@ -206,3 +223,12 @@ AgentDrop/
 └── scripts/
     └── file_transfer_server.py  (~680 行，含 preview 路由)
 ```
+
+## 附录：项目数据
+
+- **开发时间跨度**：2026-02-28（单日完成）
+- **代码量**：~1430 行（Python 690 行 + HTML 750 行）
+- **会话数**：4 个 Claude Code 会话
+- **用户 prompt 数**：约 44 条
+- **安全问题修复**：7 个（2 Critical + 3 High + 2 Medium）
+- **最终仓库**：https://github.com/WayneVoyager/AgentDrop

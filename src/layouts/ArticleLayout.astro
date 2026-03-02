@@ -8,10 +8,21 @@ import { getMetaDescription } from '../utils/excerpt';
 const {
   entry,
   Content,
+  headings = [],
   typeLabel,
   prev,
   next
 } = Astro.props;
+
+type TocItem = { text: string; slug: string; depth: number };
+const tocItems: TocItem[] = headings
+  .filter((h: { depth: number }) => h.depth === 2 || h.depth === 3)
+  .map((h: { text: string; slug: string; depth: number }) => ({
+    text: h.text,
+    slug: h.slug,
+    depth: h.depth
+  }));
+const showToc = tocItems.length >= 3;
 
 const tags = entry?.data?.tags ?? [];
 const firstTag = tags[0];
@@ -102,4 +113,49 @@ const description = getMetaDescription(entry);
       enableSwipeDownClose: false
     });
   </script>
+
+  {showToc && (
+    <nav class="article-toc" aria-label="目录">
+      {tocItems.map((item) => (
+        <a
+          class="article-toc__row"
+          href={`#${item.slug}`}
+          data-depth={item.depth}
+          data-target={item.slug}
+        >
+          <span class="article-toc__label">{item.text}</span>
+          <span class="article-toc__marker">
+            <span class="article-toc__bar"></span>
+            <span class="article-toc__dot"></span>
+          </span>
+        </a>
+      ))}
+    </nav>
+  )}
+
+  {showToc && (
+    <script is:inline>
+      (() => {
+        const nav = document.querySelector('.article-toc');
+        if (!nav) return;
+        const rows = Array.from(nav.querySelectorAll('.article-toc__row'));
+        const targets = rows.map(r => r.getAttribute('data-target'));
+        let activeId = null;
+
+        function update() {
+          let cur = null;
+          for (const id of targets) {
+            const el = document.getElementById(id);
+            if (el && el.getBoundingClientRect().top <= 120) cur = id;
+          }
+          if (cur === activeId) return;
+          activeId = cur;
+          rows.forEach(r => r.classList.toggle('active', r.getAttribute('data-target') === activeId));
+        }
+
+        window.addEventListener('scroll', update, { passive: true });
+        update();
+      })();
+    </script>
+  )}
 </BaseLayout>

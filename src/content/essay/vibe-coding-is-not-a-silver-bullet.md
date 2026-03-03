@@ -1,12 +1,10 @@
 ---
-title: "Vibe Coding：一种新的「编程语言」"
+title: "Vibe Coding 不是银弹"
 date: 2026-03-02
-tags: ["日记", "Agent", "焦虑"]
-images:
-  - src: "/whoami/bits/thinking-agent.jpg"
-    width: 2048
-    height: 2048
-    alt: "赛博朋克风格的 AI 思考者"
+draft: false
+archive: true
+tags: ["AI", "随笔", "焦虑"]
+cover: "/images/essay/thinking-agent.jpg"
 ---
 
 记录一下当下对于 AI 的感受。
